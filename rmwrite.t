@@ -54,15 +54,15 @@ do "./rmwrite.pl $argv[0]";
 
 # Test subroutines
 is(Rmwrite::rm_write_other($argv[0], 0), undef, "Works with no verbosity.");
-is(Rmwrite::rm_write_other($argv[1], 1), "Changed permissions on ./test2 0775\n", "Works with verbosity.");
-is(Rmwrite::rm_write_other('./ttt', 1), "Invalid Path ./ttt\n", "Doesn't work with bad path verbose");
+is(Rmwrite::rm_write_other($argv[1], 1), undef, "Works with verbosity.");
+is(Rmwrite::rm_write_other('./ttt', 1), -1, "Doesn't work with bad path verbose");
 is(Rmwrite::rm_write_other($argv[0], 'x'), -1, "Doesn't work with bad verbosity - String");
 is(Rmwrite::rm_write_other($argv[0], 3), -1, "Doesn't work with bad verbosity - Integer");
 
-is(Rmwrite::_verbose(2, $argv[0], 666), "Permission Denied on $argv[0]\n", "Verbose prints");
-is(Rmwrite::_verbose(3, $argv[1], 664), "Changed permissions on $argv[1] 0664\n", "Verbose prints");
-is(Rmwrite::_verbose(4, $argv[0], 666), "No change on $argv[0] 1232\n", "Verbose prints");
-is(Rmwrite::_verbose(5, $argv[1], 664), "Invalid Path $argv[1]\n", "Verbose prints");
+is(Rmwrite::_verbose(2, $argv[0], 666), "Permission Denied on ./test\n", "Verbose prints");
+is(Rmwrite::_verbose(3, $argv[1], 664), "Changed permissions on ./test2 0664\n", "Verbose prints");
+is(Rmwrite::_verbose(4, $argv[0], 666), "No change on ./test 1232\n", "Verbose prints");
+is(Rmwrite::_verbose(5, $argv[1], 664), "Invalid Path ./test2\n", "Verbose prints");
 is(Rmwrite::_verbose('Inf', 'ttt', 644), undef, "Verbose bad path:sting");
 
 is(Rmwrite::_perm_check($argv[0]), 16893, "Permission Check Works, Correct Permissions");

@@ -22,9 +22,12 @@ no strict 'subs';
 
 our $VERSION = '1.0';
 
-use Fcntl                   ':mode';
+use Fcntl          ':mode';
 use Switch;
-use Scalar::Util;
+use Scalar::Util    ();
+use File::Find      ();
+
+my @content;
 
 # Removes write permissions for other.
 sub rm_write_other {
@@ -34,19 +37,22 @@ sub rm_write_other {
     my $ow;
 
     return -1 unless Scalar::Util::looks_like_number($verbose);
-    return -1 unless $verbose == 1 || $verbose == 0; 
+    return -1 unless ($verbose == 1 || $verbose == 0) && (-d $path || -e $path); 
 
-    $mode = _perm_check($path);
-    $ow = $mode & S_IWOTH if $mode;
+    File::Find::find( \&_wanted, $path );
 
-    switch ( $mode ) {
-        case -1             { return _verbose(5, $path, $mode) if $verbose }
-        case /[^-1]\d+/     {  $fperms = sprintf( "%04o", S_IMODE($mode) ^ S_IWOTH ) if $ow == 0002;
-                               chmod oct($fperms), $path if $ow == 0002;
-                               return _verbose(3, $path, $fperms) if $verbose && $ow == 0002; 
-                               return _verbose(4, $path, $mode) if $verbose && $ow != 0002;
-                            }
-        else                { return _verbose(2, $path, $mode) if $verbose }
+    foreach ( @content ) {
+        $mode = _perm_check($_);
+        $ow = $mode & S_IWOTH if $mode;
+
+        switch ( $mode ) {
+            case -1             { print _verbose(5, $_, $mode) if $verbose }
+            case /[^-1]\d+/     { $fperms = sprintf( "%04o", S_IMODE($mode) ^ S_IWOTH ) if $ow == 0002;
+                                  chmod oct($fperms), $_ if $ow == 0002;
+                                  print _verbose(3, $_, $fperms) if $verbose && $ow == 0002; 
+                                  print _verbose(4, $_, $mode) if $verbose && $ow != 0002; }
+            else                { print _verbose(2, $_, $mode) if $verbose }
+        }
     }
 
     return;
@@ -63,7 +69,7 @@ sub _perm_check {
     my $fuid;
     my $fgid;
 
-    return -1 unless  -d $path ||  -e $path;
+    return -1 unless  -d $path || -e $path;
     
     @sb = stat($path);
     @user = getpwuid($>);
@@ -85,6 +91,12 @@ sub _verbose {
     return sprintf("Changed permissions on %s %04o\n", $path, oct($mode)) if $val == 3;
     return sprintf("No change on %s %04o\n", $path, S_IMODE($mode)) if $val == 4;
     return sprintf("Invalid Path %s\n", $path) if $val == 5;
+    return;
+}
+
+# helper function for find.
+sub _wanted {
+    push @content, $File::Find::name;
     return;
 }
 
