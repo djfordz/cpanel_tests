@@ -25,12 +25,13 @@ use utf8;
 use lib './lib';
 use Rmwrite         ();
 use Getopt::Long    qw( GetOptions );
-use Cwd             qw( realpath );
+use File::Find      ();
 
 my %opt;
-my $verbose_flag = 0;
+my $verbose_flag;
 my $path;
 my $val;
+my @content;
 
 sub help {
 print <<EOF;
@@ -48,7 +49,7 @@ EOF
 sub execute {
     my ( $path, $flag ) = @_;
 
-    Rmwrite::recurse_rm_write_other($path, $flag);
+    print Rmwrite::rm_write_other($path, $flag);
 
     return;
 }
@@ -64,14 +65,21 @@ sub check {
     return;
 }
 
+sub _wanted {
+    push @content, $File::Find::name;
+    return;
+}
+
 GetOptions(\%opt, "v|verbose!", "h|help!");
 
 help() if $opt{h} or (scalar @ARGV == 0);
 
 map { check($_) } @ARGV;
 
-($verbose_flag = 1) if $opt{v};
+$verbose_flag = $opt{v} ? 1 : 0;
 
-map { execute( $_, $verbose_flag ) } @ARGV;
+map { File::Find::find( \&_wanted, $_ ) } @ARGV;
 
-1;
+map { execute( $_, $verbose_flag ) } @content;
+
+
