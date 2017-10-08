@@ -46,7 +46,6 @@ sub rm_write_other {
         closedir($dh);
 
         $result = _rm_write($path, $verbose);
-
     } elsif ( -e $path ) {
         $result = _rm_write($path, $verbose);
     } else {
@@ -78,6 +77,8 @@ sub _rm_write {
                               return _verbose(4, $path, $mode) if $verbose && $other_write != 0002; }
         else                { return _verbose(2, $path, $mode) if $verbose }
     }
+
+    return;
 }
 
 # Checks to ensure process can change file permissions
