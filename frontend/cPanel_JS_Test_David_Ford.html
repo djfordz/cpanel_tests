@@ -36,9 +36,6 @@
 </style>
 </head>
 <body>
-<div id="intro">
-    <p>Hello, for Part for 4 I am getting CORS error, from my understanding the 'Access-Control-Allow-Origin' header needs to be set on Yahoo Flickr server.  I am only able to get it to work if disable CORS in Chrome Browser with the --disable-web-security on start. If I am misunderstanding the CORS policy and I am able to actually retrieve the content without it, then I apologize my ignorance.</p>
-</div>
 <div id="registrationform">
 	<h2>Part 1: Register your cPanel Software</h2>
 <form  action="register.cgi" method="POST" name="loginform">
@@ -98,8 +95,6 @@ inputs.forEach(function(v) {
         case 'usernumber' : usernumber = v;
         break;
         case 'geoglocation' : geoglocation = v;
-        break;
-        case 'flickrpics' : flickr(v);
         break;
     }
 });
@@ -175,6 +170,7 @@ function message(el, bool) {
 
 /******************* PART 2 ****************************************/
 // YUI for popups yay!
+
 YUI().use('node', function(Y) {
     var body = Y.one('body');
     var btn = Y.one('input#findoutmore');
@@ -193,47 +189,25 @@ YUI().use('node', function(Y) {
 
 /*************** PART 3 is Above right under thisArray!!!*********************************/
 
-
 /*************** PART 4 *****************/
-/* Access-Control-Allow-Origin needs to be set on yahoo server. I am getting CORS error trying to access. I can only access by starting chrome with --disable-web-security and everything works fine, from what I understand the CORS header has to be set on target server. Please start Chrome with --disable-web-security flag to see my project */
 
-function flickr(btn) {
+var jsonFlickrFeed = function(data) {
+    var btn = document.getElementById('flickrpics');
     btn.addEventListener('click', function(event) {
         event.preventDefault();
-        getFlickr();
+        var items, parent = btn.parentNode;
+        items = data.items;
+        items.forEach(function(v) {
+            var div = document.createElement('div');
+            div.innerHTML = v.description;
+            parent.appendChild(div);
+        });
     });
-}
+};
 
-function getFlickr() {
-    var flickrJson, url = 'http://www.flickr.com/services/feeds/photos_public.gne?tags=punctuation,atsign&format=json', xhr = new XMLHttpRequest();
-    xhr.responseType = 'text';
-    xhr.open('GET', url, true);
-    xhr.onreadystatechange = function() {
-        if (xhr.readyState == 4) {
-            var status = xhr.status;
-            if (status == 200) {
-                data = xhr.responseText;
-                successHandler(data);
-            }
-        }
-    };
-    xhr.send();
-}
+/**************************** END **********************************************/
 
-function successHandler(data) {
-    var jsonData, items, el = document.getElementById('flickrpics');
-    var parent = el.parentNode;
-    data = data.replace('jsonFlickrFeed(', '');
-    data = data.slice(0, data.length - 1);
-    jsonData = JSON.parse(data);
-    items = jsonData.items;
-    items.forEach(function(v) {
-        var div = document.createElement('div');
-        div.innerHTML = v.description;
-        div.display = 'inline-block';
-        parent.appendChild(div);
-    })
-}
 </script>
+<script type='text/javascript' src='http://www.flickr.com/services/feeds/photos_public.gne?tags=punctuation,atsign&format=json'></script>
 </body>
 </html>

@@ -27,33 +27,42 @@ use Switch;
 use Scalar::Util    ();
 use File::Find      ();
 
-my @content;
-
 # Removes write permissions for other.
 sub rm_write_other {
     my ( $path, $verbose ) = @_;
     my $mode;
     my $fperms;
-    my $ow;
+    my $other_write;
+    my $file;
+    my $dh;
+    my $pwd;
 
     return -1 unless Scalar::Util::looks_like_number($verbose);
     return -1 unless ($verbose == 1 || $verbose == 0) && (-d $path || -e $path); 
 
-    File::Find::find( \&_wanted, $path );
+    opendir($dh, $path) or die "Can't opendir $path: $!";
 
-    foreach ( @content ) {
-        $mode = _perm_check($_);
-        $ow = $mode & S_IWOTH if $mode;
+    while( readdir($dh) ) {
+        $pwd = $path . '/' . $_;
+        $mode = _perm_check($pwd);
+
+        return print "No Mode\n" unless $mode;
+
+        $other_write = $mode & S_IWOTH;
 
         switch ( $mode ) {
-            case -1             { print _verbose(5, $_, $mode) if $verbose }
-            case /[^-1]\d+/     { $fperms = sprintf( "%04o", S_IMODE($mode) ^ S_IWOTH ) if $ow == 0002;
-                                  chmod oct($fperms), $_ if $ow == 0002;
-                                  print _verbose(3, $_, $fperms) if $verbose && $ow == 0002; 
-                                  print _verbose(4, $_, $mode) if $verbose && $ow != 0002; }
-            else                { print _verbose(2, $_, $mode) if $verbose }
+            case -1             { print _verbose(5, $pwd, $mode) if $verbose }
+            case /^[^\-1]?\d+/  { $fperms = sprintf( "%04o", S_IMODE($mode) ^ S_IWOTH ) if $other_write == 0002;
+                                  chmod oct($fperms), $pwd if $other_write == 0002;
+                                  print _verbose(3, $pwd, $fperms) if $verbose && $other_write == 0002; 
+                                  print _verbose(4, $pwd, $mode) if $verbose && $other_write != 0002; }
+            else                { print _verbose(2, $pwd, $mode) if $verbose }
         }
+
+        rm_write_other($pwd, $verbose) if ( -d $pwd && $_ ne '..' && $_ ne '.' );
     }
+
+    closedir($dh);
 
     return;
 }
@@ -91,12 +100,6 @@ sub _verbose {
     return sprintf("Changed permissions on %s %04o\n", $path, oct($mode)) if $val == 3;
     return sprintf("No change on %s %04o\n", $path, S_IMODE($mode)) if $val == 4;
     return sprintf("Invalid Path %s\n", $path) if $val == 5;
-    return;
-}
-
-# helper function for find.
-sub _wanted {
-    push @content, $File::Find::name;
     return;
 }
 
