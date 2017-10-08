@@ -29,12 +29,13 @@ my @argv = qw( ./test ./test2 );
 
 # Setup
 BEGIN {
-    my $fh;
     my $dir = './test';
     my $dir2 = './test2';
+
     mkpath $dir;
-    chmod 0777, $dir;
     mkpath $dir2;
+
+    chmod 0777, $dir;
     chmod 0777, $dir2;
 }
 
@@ -50,7 +51,7 @@ can_ok('Rmwrite', '_verbose');
 can_ok('Rmwrite', '_perm_check');
 
 # Start script
-do "./rmwrite.pl $argv[0]";
+# do "./rmwrite.pl $argv[0]";
 
 # Test subroutines
 is(Rmwrite::rm_write_other($argv[0], 0), undef, "Works with no verbosity.");

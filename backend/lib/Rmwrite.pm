@@ -25,45 +25,30 @@ our $VERSION = '1.0';
 use Fcntl          ':mode';
 use Switch;
 use Scalar::Util    ();
-use File::Find      ();
 
 # Removes write permissions for other.
 sub rm_write_other {
     my ( $path, $verbose ) = @_;
-    my $mode;
-    my $fperms;
-    my $other_write;
-    my $file;
     my $dh;
     my $pwd;
 
-    return -1 unless Scalar::Util::looks_like_number($verbose);
-    return -1 unless ($verbose == 1 || $verbose == 0) && (-d $path || -e $path); 
+    return -1 unless Scalar::Util::looks_like_number($verbose) && ($verbose == 1 || $verbose == 0);
 
-    opendir($dh, $path) or die "Can't opendir $path: $!";
+    if ( -d $path ) {
+        opendir($dh, $path) or die "Can't opendir $path: $!";
 
-    while( readdir($dh) ) {
-        $pwd = $path . '/' . $_;
-        $mode = _perm_check($pwd);
-
-        return print "No Mode\n" unless $mode;
-
-        $other_write = $mode & S_IWOTH;
-
-        switch ( $mode ) {
-            case -1             { print _verbose(5, $pwd, $mode) if $verbose }
-            case /^[^\-1]?\d+/  { $fperms = sprintf( "%04o", S_IMODE($mode) ^ S_IWOTH ) if $other_write == 0002;
-                                  chmod oct($fperms), $pwd if $other_write == 0002;
-                                  print _verbose(3, $pwd, $fperms) if $verbose && $other_write == 0002; 
-                                  print _verbose(4, $pwd, $mode) if $verbose && $other_write != 0002; }
-            else                { print _verbose(2, $pwd, $mode) if $verbose }
+        while( readdir($dh) ) {
+            $pwd = $path . '/' . $_;
+            _rm_write($pwd, $verbose) if $_ ne '..';
+            rm_write_other($pwd, $verbose) if ( $_ ne '..' && $_ ne '.' );
         }
 
-        rm_write_other($pwd, $verbose) if ( -d $pwd && $_ ne '..' && $_ ne '.' );
+        closedir($dh);
+
+    } else {
+        return -1;
     }
-
-    closedir($dh);
-
+    
     return;
 }
 
@@ -103,4 +88,25 @@ sub _verbose {
     return;
 }
 
+sub _rm_write {
+    my ($path, $verbose) = @_;
+    my $mode;
+    my $other_write;
+    my $fperms;
+
+    $mode = _perm_check($path);
+
+    return print "No Mode\n" unless $mode;
+
+    $other_write = $mode & S_IWOTH;
+
+    switch ( $mode ) {
+        case -1             { print _verbose(5, $path, $mode) if $verbose }
+        case /^[^\-1]?\d+/  { $fperms = sprintf( "%04o", S_IMODE($mode) ^ S_IWOTH ) if $other_write == 0002;
+                              chmod oct($fperms), $path if $other_write == 0002;
+                              print _verbose(3, $path, $fperms) if $verbose && $other_write == 0002; 
+                              print _verbose(4, $path, $mode) if $verbose && $other_write != 0002; }
+        else                { print _verbose(2, $path, $mode) if $verbose }
+    }
+}
 1;
