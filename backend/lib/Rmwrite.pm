@@ -31,6 +31,7 @@ sub rm_write_other {
     my ( $path, $verbose ) = @_;
     my $dh;
     my $pwd;
+    my $result;
 
     return -1 unless Scalar::Util::looks_like_number($verbose) && ($verbose == 1 || $verbose == 0);
 
@@ -39,17 +40,44 @@ sub rm_write_other {
 
         while( readdir($dh) ) {
             $pwd = $path . '/' . $_;
-            _rm_write($pwd, $verbose) if $_ ne '..';
             rm_write_other($pwd, $verbose) if ( $_ ne '..' && $_ ne '.' );
         }
 
         closedir($dh);
 
+        $result = _rm_write($path, $verbose);
+
+    } elsif ( -e $path ) {
+        $result = _rm_write($path, $verbose);
     } else {
-        return -1;
+        return "Unspecified Error. $!";
     }
     
+    print $result if $verbose == 1;
     return;
+}
+
+# Remove write permissions of other.
+sub _rm_write {
+    my ($path, $verbose) = @_;
+    my $mode;
+    my $other_write;
+    my $fperms;
+
+    $mode = _perm_check($path) if $path;
+
+    return -1 unless $mode;
+
+    $other_write = $mode & S_IWOTH;
+
+    switch ( $mode ) {
+        case -1             { return _verbose(5, $path, $mode) if $verbose }
+        case /^[^\-1]?\d+/  { $fperms = sprintf( "%04o", S_IMODE($mode) ^ S_IWOTH ) if $other_write == 0002;
+                              chmod oct($fperms), $path if $other_write == 0002;
+                              return _verbose(3, $path, $fperms) if $verbose && $other_write == 0002; 
+                              return _verbose(4, $path, $mode) if $verbose && $other_write != 0002; }
+        else                { return _verbose(2, $path, $mode) if $verbose }
+    }
 }
 
 # Checks to ensure process can change file permissions
@@ -73,8 +101,12 @@ sub _perm_check {
     $fuid = $sb[4];
     $fgid = $sb[5];
 
-    return $mode if $uid == 0 || $uid == $fuid || $gid == $fgid;
-    return;
+    if ($uid == 0 || $uid == $fuid || $gid == $fgid) {
+        return $mode;
+    } else {
+        return -1;
+    }
+    
 }
 
 # Adds output to stdout
@@ -88,25 +120,4 @@ sub _verbose {
     return;
 }
 
-sub _rm_write {
-    my ($path, $verbose) = @_;
-    my $mode;
-    my $other_write;
-    my $fperms;
-
-    $mode = _perm_check($path);
-
-    return print "No Mode\n" unless $mode;
-
-    $other_write = $mode & S_IWOTH;
-
-    switch ( $mode ) {
-        case -1             { print _verbose(5, $path, $mode) if $verbose }
-        case /^[^\-1]?\d+/  { $fperms = sprintf( "%04o", S_IMODE($mode) ^ S_IWOTH ) if $other_write == 0002;
-                              chmod oct($fperms), $path if $other_write == 0002;
-                              print _verbose(3, $path, $fperms) if $verbose && $other_write == 0002; 
-                              print _verbose(4, $path, $mode) if $verbose && $other_write != 0002; }
-        else                { print _verbose(2, $path, $mode) if $verbose }
-    }
-}
 1;
