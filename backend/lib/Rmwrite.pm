@@ -61,6 +61,7 @@ sub _rm_write {
     my $mode;
     my $other_write;
     my $fperms;
+    my $result;
 
     $mode = _perm_check($path) if $path;
 
@@ -68,14 +69,18 @@ sub _rm_write {
 
     $other_write = $mode & S_IWOTH;
 
-        if ( $mode == -1 ) { return _verbose(5, $path, $mode) if $verbose }
-        elsif ( $mode > 0 )  { $fperms = sprintf( "%04o", S_IMODE($mode) ^ S_IWOTH ) if $other_write == 0002;
-                              chmod oct($fperms), $path if $other_write == 0002;
-                              return _verbose(3, $path, $fperms) if $verbose && $other_write == 0002; 
-                              return _verbose(4, $path, $mode) if $verbose && $other_write != 0002; }
-        else                { return _verbose(2, $path, $mode) if $verbose }
+        if ( $mode == -1 ) { 
+            $result = _verbose(5, $path, $mode) if $verbose 
+        } elsif ( $mode > 0 )  {
+            $fperms = sprintf( "%04o", S_IMODE($mode) ^ S_IWOTH ) if $other_write == 0002;
+            chmod oct($fperms), $path if $other_write == 0002;
+            $result = _verbose(3, $path, $fperms) if $verbose && $other_write == 0002; 
+            $result = _verbose(4, $path, $mode) if $verbose && $other_write != 0002; 
+        } else {
+            $result = _verbose(2, $path, $mode) if $verbose
+        }
 
-    return;
+    return $result;
 }
 
 # Checks to ensure process can change file permissions
