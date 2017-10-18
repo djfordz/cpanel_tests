@@ -23,7 +23,7 @@ use warnings;
 use lib './lib';
 use Rmwrite;
 use File::Path qw(rmtree mkpath);
-use Test::More tests => 24; # last test to print
+use Test::More tests => 23; # last test to print
 
 my @argv = qw( ./test ./test2 );
 
@@ -43,7 +43,6 @@ BEGIN {
 # Confirm Use
 use_ok( 'Rmwrite' );
 use_ok('Fcntl');
-use_ok('Switch');
 use_ok('Scalar::Util');
 
 # Confirm Access

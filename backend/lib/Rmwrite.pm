@@ -23,7 +23,6 @@ no strict 'subs';
 our $VERSION = '1.0';
 
 use Fcntl          ':mode';
-use Switch;
 use Scalar::Util    ();
 
 # Removes write permissions for other.
@@ -69,14 +68,12 @@ sub _rm_write {
 
     $other_write = $mode & S_IWOTH;
 
-    switch ( $mode ) {
-        case -1             { return _verbose(5, $path, $mode) if $verbose }
-        case /^[^\-1]?\d+/  { $fperms = sprintf( "%04o", S_IMODE($mode) ^ S_IWOTH ) if $other_write == 0002;
+        if ( $mode == -1 ) { return _verbose(5, $path, $mode) if $verbose }
+        elsif ( $mode > 0 )  { $fperms = sprintf( "%04o", S_IMODE($mode) ^ S_IWOTH ) if $other_write == 0002;
                               chmod oct($fperms), $path if $other_write == 0002;
                               return _verbose(3, $path, $fperms) if $verbose && $other_write == 0002; 
                               return _verbose(4, $path, $mode) if $verbose && $other_write != 0002; }
         else                { return _verbose(2, $path, $mode) if $verbose }
-    }
 
     return;
 }
