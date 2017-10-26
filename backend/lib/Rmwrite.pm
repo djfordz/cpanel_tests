@@ -115,12 +115,13 @@ sub _perm_check {
 # Adds output to stdout
 sub _verbose {
     my ( $val, $path, $mode ) = @_;
+    my $result;
 
-    return sprintf("Permission Denied on %s\n", $path) if $val == 2;
-    return sprintf("Changed permissions on %s %04o\n", $path, oct($mode)) if $val == 3;
-    return sprintf("No change on %s %04o\n", $path, S_IMODE($mode)) if $val == 4;
-    return sprintf("Invalid Path %s\n", $path) if $val == 5;
-    return;
+    $result = sprintf("Permission Denied on %s\n", $path) if $val == 2;
+    $result = sprintf("Changed permissions on %s %04o\n", $path, oct($mode)) if $val == 3;
+    $result = sprintf("No change on %s %04o\n", $path, S_IMODE($mode)) if $val == 4;
+    $result = sprintf("Invalid Path %s\n", $path) if $val == 5;
+    return $result;
 }
 
 1;
